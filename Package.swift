@@ -1,3 +1,5 @@
+import PackageDescription
+
 #if os(OSX)
 let package = Package(
      name: "SessionMySQL",
