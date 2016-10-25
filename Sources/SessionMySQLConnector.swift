@@ -55,7 +55,7 @@ public class SessionMySQLConnector {
 		let helper = MySQLHelper(host: host, user: user, pass: pass, scheme: scheme, db: db)
 
 		do {
-			try helper.checkConnection()
+			_ = try helper.checkConnection()
 			if let res = try helper.queryRow("SELECT data FROM \(db) WHERE cookie = ? LIMIT 1", args: key) {
 				return res[0] as! String
 			}
@@ -70,7 +70,7 @@ public class SessionMySQLConnector {
 		let helper = MySQLHelper(host: host, user: user, pass: pass, scheme: scheme, db: db)
 
 		do {
-			try helper.checkConnection()
+			_ = try helper.checkConnection()
 			try helper.execute("INSERT INTO \(db) (cookie, expire, data) VALUES (?, ?, ?) " +
 				"ON DUPLICATE KEY UPDATE expire = values(expire), data = values(data)", args: cookieId, expireOn, cookieData)
 		} catch {
@@ -82,7 +82,7 @@ public class SessionMySQLConnector {
 		let helper = MySQLHelper(host: host, user: user, pass: pass, scheme: scheme, db: db)
 
 		do {
-			try helper.checkConnection()
+			_ = try helper.checkConnection()
 			try helper.execute("DELETE data FROM \(db) WHERE cookie = ? LIMIT 1", args: cookieId)
 		} catch {
 			print("error!")
