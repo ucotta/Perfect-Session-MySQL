@@ -43,13 +43,6 @@ public class DateFormatterRFC2616: DateFormatter {
 }
 
 
-func synchronize(_ lockObj: Any, closure: ()->()){
-	objc_sync_enter(lockObj)
-	closure()
-	objc_sync_exit(lockObj)
-}
-
-
 public extension HTTPRequest {
 	public func cookie(key:String) -> String? {
 		if let value = self.cookies.first(where: { (k,v) -> Bool in k == key}) {

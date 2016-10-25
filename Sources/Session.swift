@@ -3,25 +3,23 @@ import PerfectHTTP
 import PerfectLib
 
 public protocol SessionProtocol {
-	var cookieIDName:String { get set }
-	var domain:String? { get set }
+	var cookieIDName: String { get set }
+	var domain: String? { get set }
 	var expiration: PerfectHTTP.HTTPCookie.Expiration? { get set}
-	var path:String? { get set }
-	var secure:Bool? { get set }
+	var path: String? { get set }
+	var secure: Bool? { get set }
 	var httpOnly: Bool? { get set }
 	var sameSite: PerfectHTTP.HTTPCookie.SameSite? { get set }
 
-	//init(cookieName cookieIDName: String)
+	func setCookieSecureAttributes(secure: Bool?, httpOnly: Bool?, sameSite: PerfectHTTP.HTTPCookie.SameSite?)
 
-	func setCookieAttributes(domain:String?, expiration: PerfectHTTP.HTTPCookie.Expiration?, path:String?, secure:Bool?, httpOnly: Bool?, sameSite: PerfectHTTP.HTTPCookie.SameSite? )
-
-	func start(_ request:HTTPRequest, response:HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) -> Session
-	func save(_ session:Session, response: HTTPResponse)
-	func destroy(_ response:HTTPResponse, cookieID: String)
+	func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) throws -> Session
+	func save(_ session: Session, response: HTTPResponse) throws
+	func destroy(_ response: HTTPResponse, cookieID: String) throws
 }
 
 extension SessionProtocol {
-	func createCookie(cookieID:String, newExpiration: PerfectHTTP.HTTPCookie.Expiration?) -> PerfectHTTP.HTTPCookie {
+	func createCookie(cookieID: String, newExpiration: PerfectHTTP.HTTPCookie.Expiration?) -> PerfectHTTP.HTTPCookie {
 		return PerfectHTTP.HTTPCookie(
 			name: cookieIDName,
 			value: cookieID,
@@ -34,7 +32,7 @@ extension SessionProtocol {
 		)
 	}
 
-	func checkSecurity(secure:Bool? = nil, httpOnly: Bool? = nil, sameSite: PerfectHTTP.HTTPCookie.SameSite? = nil) {
+	func checkSecurity(secure: Bool? = nil, httpOnly: Bool? = nil, sameSite: PerfectHTTP.HTTPCookie.SameSite? = nil) {
 		if let val = secure {
 			if !val {
 				Log.error(message: "Do you want to use a cookie session without SSL?, really?, hackers are welcome!\n\t Please, you MUST read this: https://www.owasp.org/index.php/SecureFlag")
@@ -60,15 +58,15 @@ extension SessionProtocol {
 
 public class Session {
 	private let sessionManager: SessionProtocol
-	private let expiration:PerfectHTTP.HTTPCookie.Expiration
+	private let expiration: PerfectHTTP.HTTPCookie.Expiration
 
 	private let dateFormatter = DateFormatterRFC2616()
-	private let cookieID:String
+	private var cookieID: String
 
-	private var data = Dictionary<String, Any>()
-	private var timeExpires:Date = Date()
+	private var data = [String:Any]()
+	private var timeExpires: Date = Date()
 
-	public init(sessionManager:SessionProtocol, expiration:PerfectHTTP.HTTPCookie.Expiration) {
+	public init(sessionManager: SessionProtocol, expiration: PerfectHTTP.HTTPCookie.Expiration) {
 		self.sessionManager = sessionManager
 		self.cookieID = tokenGenerator(length: 64)
 		self.expiration = expiration
@@ -92,6 +90,10 @@ public class Session {
 		case .absoluteDate(let date):
 			timeExpires = dateFormatter.date(from: date)!
 		}
+	}
+
+	public func getExpirationDate() -> Date {
+		return timeExpires
 	}
 
 	public func getNewExpireDate() -> PerfectHTTP.HTTPCookie.Expiration {
@@ -121,20 +123,29 @@ public class Session {
 
 	}
 
-	public func save(response: HTTPResponse) {
-		sessionManager.save(self, response: response)
+	public func save(response: HTTPResponse) throws {
+		try sessionManager.save(self, response: response)
 	}
 
-	public func destroy(response: HTTPResponse) {
-		sessionManager.destroy(response, cookieID: cookieID)
+	public func destroy(response: HTTPResponse) throws {
+		try sessionManager.destroy(response, cookieID: cookieID)
 	}
-	/*
+
 	func toJSON() throws -> String {
-	return try data.jsonEncodedString()
+		return try data.jsonEncodedString()
 	}
 
 	func fromJSON(_ jsonData:String) throws {
-	//data = try jsonData.jsonDecode()
+		data = try jsonData.jsonDecode() as! [String:Any]
 	}
-	*/
+
+	public static func fromRow(sessionManager:SessionProtocol, row: [Any?]) throws -> Session {
+		// Row must contains this fields: cookie text, expire datetime and data texto.
+		//let format = DateFormatterRFC2616()
+		let sess = Session(sessionManager: sessionManager, expiration: .session)//(format.string(for: row["expire"])))
+		sess.cookieID = row[0] as! String
+		sess.data = try (row[1] as! String).jsonDecode() as! [String:Any]
+
+		return sess
+	}
 }

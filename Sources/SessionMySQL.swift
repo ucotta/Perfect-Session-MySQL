@@ -21,24 +21,22 @@
 import Foundation
 import PerfectHTTP
 import PerfectLib
-//import MySQL
-
-
+import MySQLConnectionPool
 
 public class MySQLSession: SessionProtocol {
 	public var cookieIDName: String
+	public var tableName:String
 
-	public var domain:String?
+	public var domain: String?
 	public var expiration: PerfectHTTP.HTTPCookie.Expiration? = .relativeSeconds(60*30)
-	public var path:String? = "/"
-	public var secure:Bool? = true
+	public var path: String? = "/"
+	public var secure: Bool? = true
 	public var httpOnly: Bool? = true
 	public var sameSite: PerfectHTTP.HTTPCookie.SameSite? = .strict
 
-	private let connector: SessionMySQLConnector
-
-	public required init(cookieName cookieIDName: String = "perfectCookieSession", host:String, user:String, pass:String, scheme:String, db:String) {
+	public  init(cookieName cookieIDName: String = "perfectCookieSession", tableName:String) {
 		self.cookieIDName = cookieIDName
+		self.tableName = tableName
 
 		if cookieIDName == "perfectCookieSession" {
 			// Dont help intruders to identify your application, use custom session id.
@@ -46,37 +44,107 @@ public class MySQLSession: SessionProtocol {
 		} else {
 			Log.debug(message: "MySQLSession started with cookieIDName \(cookieIDName)")
 		}
-		connector = SessionMySQLConnector(host: host, user: user, pass: pass, scheme: scheme, db: db)
-
-		//connector.dbUpdateCookieData("juan", cookieData: "juan", expireOn: Date())
-		//connector.dbUpdateCookieData("juan", cookieData: "juan2", expireOn: Date())
-		//var res = connector.dbGetCookieData("juan")
-		//connector.dbDeleteCookie("juan")
-
+		//connector = SessionMySQLConnector(host: host, user: user, pass: pass, scheme: scheme, db: db)
 	}
 
-	public func setCookieAttributes(domain:String? = nil, expiration: PerfectHTTP.HTTPCookie.Expiration? = nil, path:String? = nil,
-	                                secure:Bool? = nil, httpOnly: Bool? = nil, sameSite: PerfectHTTP.HTTPCookie.SameSite? = nil) {
-		self.domain = domain ?? self.domain
-		self.expiration = expiration ?? self.expiration
-		self.path = path ?? self.path
+	public func setCookieSecureAttributes(secure: Bool?, httpOnly: Bool?, sameSite: PerfectHTTP.HTTPCookie.SameSite? ) {
 		self.secure = secure ?? self.secure
 		self.httpOnly = httpOnly ?? self.httpOnly
 		self.sameSite = sameSite ?? self.sameSite
 
 		checkSecurity(secure: secure, httpOnly: httpOnly, sameSite: sameSite)
 	}
-	public func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) -> Session {
+	public func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) throws -> Session {
+		var session:Session? = nil
+		if let cookieID = request.cookie(key: cookieIDName) {
+			session = try getCookieData(key: cookieID)
+		}
+
+		// if not was registered create a new one
+		if session == nil {
+			// Create a new session.
+			session = Session(sessionManager: self, expiration: expiration ?? self.expiration!)
+		}
+		try deleteExpiredCookies()
+
+
 		return Session(sessionManager: self, expiration: .session)
 	}
 
-	public func save(_ session: Session, response: HTTPResponse) { }
+	public func save(_ session: Session, response: HTTPResponse) throws {
+		try updateCookieData(session: session)
+		response.addCookie(createCookie(cookieID: session.getCookieID(), newExpiration: session.getNewExpireDate()))
+		try deleteExpiredCookies()
+	}
 
-	public func destroy(_ response: HTTPResponse, cookieID: String) {
-		// pass
+	public func destroy(_ response: HTTPResponse, cookieID: String) throws {
+		try deleteCookie(cookieID: cookieID)
+		try deleteExpiredCookies()
+	}
+
+	// MySQL functions
+	public func getCookieData(key: String) throws -> Session? {
+		// Dont catch connections errors.
+		let conn = try ConnectionPool.sharedInstance.getConnection()
+		defer {
+			conn.returnToPool()
+		}
+
+		do {
+			if let row = try conn.queryRow("SELECT * FROM \(tableName) WHERE cookie = ? LIMIT 1", args: key) {
+				return try Session.fromRow(sessionManager: self, row: row)
+			}
+		} catch {
+			print("error in Session.fromRow")
+		}
+
+		return nil
+	}
+
+	private func updateCookieData(session: Session) throws {
+		//try updateCookieData((session?.getCookieID())!, cookieData: (session?.toJSON())!, expireOn: (session?.getExpirationDate())!)
+
+		// Dont catch connections errors.
+		let conn = try ConnectionPool.sharedInstance.getConnection()
+		defer {
+			conn.returnToPool()
+		}
+
+		do {
+			try conn.execute("INSERT INTO \(tableName) (cookie, expire, data) VALUES (?, ?, ?) " +
+				"ON DUPLICATE KEY UPDATE expire = values(expire), data = values(data)", args: session.getCookieID(), session.getExpirationDate(), session.toJSON())
+		} catch {
+			print("error in Session.fromRow")
+		}
 	}
 
 
+	private func deleteCookie(cookieID: String) throws {
+		let conn = try ConnectionPool.sharedInstance.getConnection()
+		defer {
+			conn.returnToPool()
+		}
+
+		do {
+			try conn.execute("DELETE FROM \(tableName) WHERE cookie = ? LIMIT 1", args: cookieID)
+		} catch {
+			print("error deleting cookie \(cookieID)")
+		}
+	}
+
+
+	private func deleteExpiredCookies() throws {
+		let conn = try ConnectionPool.sharedInstance.getConnection()
+		defer {
+			conn.returnToPool()
+		}
+
+		do {
+			try conn.execute("DELETE FROM \(tableName) expire < now()")
+		} catch {
+			print("error in deleting expired cookies.")
+		}
+	}
 }
 
 
