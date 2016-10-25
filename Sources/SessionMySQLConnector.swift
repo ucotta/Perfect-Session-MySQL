@@ -57,7 +57,7 @@ public class SessionMySQLConnector {
 		do {
 			_ = try helper.checkConnection()
 			if let res = try helper.queryRow("SELECT data FROM \(db) WHERE cookie = ? LIMIT 1", args: key) {
-				return res[0] as! String
+				return res[0] as? String
 			}
 		} catch {
 			print("error!")
