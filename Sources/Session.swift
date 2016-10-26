@@ -144,7 +144,8 @@ public class Session {
 		//let format = DateFormatterRFC2616()
 		let sess = Session(sessionManager: sessionManager, expiration: .session)//(format.string(for: row["expire"])))
 		sess.cookieID = row[0] as! String
-		sess.data = try (row[1] as! String).jsonDecode() as! [String:Any]
+		//sess.timeExpires
+		sess.data = try (row[2] as! String).jsonDecode() as! [String:Any]
 
 		return sess
 	}

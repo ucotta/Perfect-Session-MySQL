@@ -68,7 +68,7 @@ public class MySQLSession: SessionProtocol {
 		try deleteExpiredCookies()
 
 
-		return Session(sessionManager: self, expiration: .session)
+		return session!
 	}
 
 	public func save(_ session: Session, response: HTTPResponse) throws {
@@ -140,7 +140,7 @@ public class MySQLSession: SessionProtocol {
 		}
 
 		do {
-			try conn.execute("DELETE FROM \(tableName) expire < now()")
+			try conn.execute("DELETE FROM \(tableName) WHERE expire < now()")
 		} catch {
 			print("error in deleting expired cookies.")
 		}
