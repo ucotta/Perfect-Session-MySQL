@@ -17,7 +17,7 @@ func tokenGenerator(withBase base: UInt32 = 62, length: Int) -> String {
 	var code = ""
 	for _ in 0..<length {
 		#if os(Linux)
-			let x = Int(random() / 62)
+			let x = Int(Double(random()) / Double(RAND_MAX) * 62)
 		#else
 			let x = Int(arc4random_uniform(min(base, 62)))
 		#endif
