@@ -13,9 +13,9 @@ public protocol SessionProtocol {
 
 	func setCookieSecureAttributes(secure: Bool?, httpOnly: Bool?, sameSite: PerfectHTTP.HTTPCookie.SameSite?)
 
-	func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) -> Session
-	func save(_ session: Session, response: HTTPResponse)
-	func destroy(_ response: HTTPResponse, cookieID: String)
+	func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) throws -> Session
+	func save(_ session: Session, response: HTTPResponse) throws
+	func destroy(_ response: HTTPResponse, cookieID: String) throws
 }
 
 extension SessionProtocol {
@@ -111,23 +111,35 @@ public class Session {
 		return self.cookieID
 	}
 
-	public func get(_ key:String) -> Any? {
-		return data[key]
-	}
-	public func set(_ key:String, value:Any) {
-		data[key] = value
+	//public func get(_ key:String) -> Any? {
+	//	return data[key]
+	//}
+	//public func set(_ key:String, value:Any) {
+	//	data[key] = value
 
-	}
-	public func unset(_ key:String) {
-		data.removeValue(forKey: key)
+	//}
+	//public func unset(_ key:String) {
+	//	data.removeValue(forKey: key)
+	//}
+    
+    subscript(key: String, value: Any?) -> Any? {
+        get {
+            return data[key]
+        }
+        set {
+            if value == nil {
+                data.removeValue(forKey: key)
+            } else {
+                data[key] = value
+            }
+        }
+    }
 
-	}
-
-	public func save(response: HTTPResponse) {
+	public func save(response: HTTPResponse) throws {
 		try sessionManager.save(self, response: response)
 	}
 
-	public func destroy(response: HTTPResponse) {
+	public func destroy(response: HTTPResponse) throws {
 		try sessionManager.destroy(response, cookieID: cookieID)
 	}
 

@@ -54,7 +54,7 @@ public class MySQLSession: SessionProtocol {
 
 		checkSecurity(secure: secure, httpOnly: httpOnly, sameSite: sameSite)
 	}
-	public func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) -> Session {
+	public func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) throws -> Session {
 		var session:Session? = nil
 		if let cookieID = request.cookie(key: cookieIDName) {
 			session = try getCookieData(key: cookieID)
@@ -71,19 +71,19 @@ public class MySQLSession: SessionProtocol {
 		return session!
 	}
 
-	public func save(_ session: Session, response: HTTPResponse) {
+	public func save(_ session: Session, response: HTTPResponse) throws {
 		try updateCookieData(session: session)
 		response.addCookie(createCookie(cookieID: session.getCookieID(), newExpiration: session.getNewExpireDate()))
 		try deleteExpiredCookies()
 	}
 
-	public func destroy(_ response: HTTPResponse, cookieID: String) {
+	public func destroy(_ response: HTTPResponse, cookieID: String) throws {
 		try deleteCookie(cookieID: cookieID)
 		try deleteExpiredCookies()
 	}
 
 	// MySQL functions
-	public func getCookieData(key: String) -> Session? {
+	public func getCookieData(key: String) throws -> Session? {
 		// Dont catch connections errors.
 		let conn = try ConnectionPool.sharedInstance.getConnection()
 		defer {
@@ -101,7 +101,7 @@ public class MySQLSession: SessionProtocol {
 		return nil
 	}
 
-	private func updateCookieData(session: Session) {
+	private func updateCookieData(session: Session) throws {
 		//try updateCookieData((session?.getCookieID())!, cookieData: (session?.toJSON())!, expireOn: (session?.getExpirationDate())!)
 
 		// Dont catch connections errors.
@@ -119,7 +119,7 @@ public class MySQLSession: SessionProtocol {
 	}
 
 
-	private func deleteCookie(cookieID: String) {
+	private func deleteCookie(cookieID: String) throws {
 		let conn = try ConnectionPool.sharedInstance.getConnection()
 		defer {
 			conn.returnToPool()
@@ -133,7 +133,7 @@ public class MySQLSession: SessionProtocol {
 	}
 
 
-	private func deleteExpiredCookies() {
+	private func deleteExpiredCookies() throws {
 		let conn = try ConnectionPool.sharedInstance.getConnection()
 		defer {
 			conn.returnToPool()
