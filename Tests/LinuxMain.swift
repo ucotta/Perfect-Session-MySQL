@@ -1,6 +1,6 @@
 import XCTest
-@testable import nTests
+@testable import SessionMySQLTests
 
 XCTMain([
-     testCase(nTests.allTests),
+     testCase(SessionMySQLTests.allTests),
 ])

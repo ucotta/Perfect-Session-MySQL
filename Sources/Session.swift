@@ -13,9 +13,9 @@ public protocol SessionProtocol {
 
 	func setCookieSecureAttributes(secure: Bool?, httpOnly: Bool?, sameSite: PerfectHTTP.HTTPCookie.SameSite?)
 
-	func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) throws -> Session
-	func save(_ session: Session, response: HTTPResponse) throws
-	func destroy(_ response: HTTPResponse, cookieID: String) throws
+	func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) -> Session
+	func save(_ session: Session, response: HTTPResponse)
+	func destroy(_ response: HTTPResponse, cookieID: String)
 }
 
 extension SessionProtocol {
@@ -123,11 +123,11 @@ public class Session {
 
 	}
 
-	public func save(response: HTTPResponse) throws {
+	public func save(response: HTTPResponse) {
 		try sessionManager.save(self, response: response)
 	}
 
-	public func destroy(response: HTTPResponse) throws {
+	public func destroy(response: HTTPResponse) {
 		try sessionManager.destroy(response, cookieID: cookieID)
 	}
 
