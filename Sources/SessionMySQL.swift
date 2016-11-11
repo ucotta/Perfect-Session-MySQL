@@ -85,7 +85,7 @@ public class MySQLSession: SessionProtocol {
 	// MySQL functions
 	public func getCookieData(key: String) throws -> Session? {
 		// Dont catch connections errors.
-		let conn = try ConnectionPool.sharedInstance.getConnection()
+		let conn = try MySQLConnectionPool.sharedInstance.getConnection()
 		defer {
 			conn.returnToPool()
 		}
@@ -105,7 +105,7 @@ public class MySQLSession: SessionProtocol {
 		//try updateCookieData((session?.getCookieID())!, cookieData: (session?.toJSON())!, expireOn: (session?.getExpirationDate())!)
 
 		// Dont catch connections errors.
-		let conn = try ConnectionPool.sharedInstance.getConnection()
+		let conn = try MySQLConnectionPool.sharedInstance.getConnection()
 		defer {
 			conn.returnToPool()
 		}
@@ -120,7 +120,7 @@ public class MySQLSession: SessionProtocol {
 
 
 	private func deleteCookie(cookieID: String) throws {
-		let conn = try ConnectionPool.sharedInstance.getConnection()
+		let conn = try MySQLConnectionPool.sharedInstance.getConnection()
 		defer {
 			conn.returnToPool()
 		}
@@ -134,7 +134,7 @@ public class MySQLSession: SessionProtocol {
 
 
 	private func deleteExpiredCookies() throws {
-		let conn = try ConnectionPool.sharedInstance.getConnection()
+		let conn = try MySQLConnectionPool.sharedInstance.getConnection()
 		defer {
 			conn.returnToPool()
 		}
