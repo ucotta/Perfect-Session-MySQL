@@ -111,16 +111,16 @@ public class Session {
 		return self.cookieID
 	}
 
-	//public func get(_ key:String) -> Any? {
-	//	return data[key]
-	//}
-	//public func set(_ key:String, value:Any) {
-	//	data[key] = value
+	public func get(_ key:String) -> Any? {
+		return data[key]
+	}
+	public func set(_ key:String, value:Any) {
+		data[key] = value
 
-	//}
-	//public func unset(_ key:String) {
-	//	data.removeValue(forKey: key)
-	//}
+	}
+	public func unset(_ key:String) {
+		data.removeValue(forKey: key)
+	}
     
     public subscript(key: String) -> Any? {
         get {
