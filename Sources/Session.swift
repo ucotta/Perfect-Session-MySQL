@@ -122,15 +122,15 @@ public class Session {
 	//	data.removeValue(forKey: key)
 	//}
     
-    public subscript(key: String, value: Any?) -> Any? {
+    public subscript(key: String) -> Any? {
         get {
             return data[key]
         }
-        set {
-            if value == nil {
+        set(newValue) {
+            if newValue == nil {
                 data.removeValue(forKey: key)
             } else {
-                data[key] = value
+                data[key] = newValue
             }
         }
     }
