@@ -122,7 +122,7 @@ public class Session {
 	//	data.removeValue(forKey: key)
 	//}
     
-    subscript(key: String, value: Any?) -> Any? {
+    public subscript(key: String, value: Any?) -> Any? {
         get {
             return data[key]
         }
