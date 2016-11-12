@@ -90,12 +90,8 @@ public class MySQLSession: SessionProtocol {
 			conn.returnToPool()
 		}
 
-		do {
-			if let row = try conn.queryRow("SELECT * FROM \(tableName) WHERE cookie = ? LIMIT 1", args: key) {
-				return try Session.fromRow(sessionManager: self, row: row)
-			}
-		} catch {
-			print("error in Session.fromRow")
+		if let row = try conn.queryRow("SELECT * FROM \(tableName) WHERE cookie = ? LIMIT 1", args: key) {
+			return try Session.fromRow(sessionManager: self, row: row)
 		}
 
 		return nil
@@ -109,13 +105,8 @@ public class MySQLSession: SessionProtocol {
 		defer {
 			conn.returnToPool()
 		}
-
-		do {
-			try conn.execute("INSERT INTO \(tableName) (cookie, expire, data) VALUES (?, ?, ?) " +
-				"ON DUPLICATE KEY UPDATE expire = values(expire), data = values(data)", args: session.getCookieID(), session.getExpirationDate(), session.toJSON())
-		} catch {
-			print("error in Session.fromRow")
-		}
+		try conn.execute("INSERT INTO \(tableName) (cookie, expire, data) VALUES (?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE expire = values(expire), data = values(data)", args: session.getCookieID(), session.getExpirationDate(), session.toJSON())
 	}
 
 
@@ -125,11 +116,7 @@ public class MySQLSession: SessionProtocol {
 			conn.returnToPool()
 		}
 
-		do {
-			try conn.execute("DELETE FROM \(tableName) WHERE cookie = ? LIMIT 1", args: cookieID)
-		} catch {
-			print("error deleting cookie \(cookieID)")
-		}
+		try conn.execute("DELETE FROM \(tableName) WHERE cookie = ? LIMIT 1", args: cookieID)
 	}
 
 
@@ -139,11 +126,7 @@ public class MySQLSession: SessionProtocol {
 			conn.returnToPool()
 		}
 
-		do {
-			try conn.execute("DELETE FROM \(tableName) WHERE expire < now()")
-		} catch {
-			print("error in deleting expired cookies.")
-		}
+		try conn.execute("DELETE FROM \(tableName) WHERE expire < now()")
 	}
 }
 
