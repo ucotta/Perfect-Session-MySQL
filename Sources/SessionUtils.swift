@@ -44,7 +44,7 @@ public class DateFormatterRFC2616: DateFormatter {
 
 
 public extension HTTPRequest {
-	public func cookie(key:String) -> String? {
+	public func cookie(key:String, for  IP:String) -> String? {
 		if let value = self.cookies.first(where: { (k,v) -> Bool in k == key}) {
 			return value.1
 		}

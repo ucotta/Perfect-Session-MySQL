@@ -66,10 +66,13 @@ public class Session {
 	private var data = [String:Any]()
 	private var timeExpires: Date = Date()
 
-	public init(sessionManager: SessionProtocol, expiration: PerfectHTTP.HTTPCookie.Expiration) {
+	private var IP: String
+
+	public init(sessionManager: SessionProtocol, expiration: PerfectHTTP.HTTPCookie.Expiration, for IP:String) {
 		self.sessionManager = sessionManager
 		self.cookieID = tokenGenerator(length: 64)
 		self.expiration = expiration
+		self.IP = IP
 
 		updateExpirationDate()
 
@@ -151,14 +154,14 @@ public class Session {
 		data = try jsonData.jsonDecode() as! [String:Any]
 	}
 
-	public static func fromRow(sessionManager:SessionProtocol, row: [Any?]) throws -> Session {
-		// Row must contains this fields: cookie text, expire datetime and data texto.
-		//let format = DateFormatterRFC2616()
-		let sess = Session(sessionManager: sessionManager, expiration: .session)//(format.string(for: row["expire"])))
-		sess.cookieID = row[0] as! String
-		//sess.timeExpires
-		sess.data = try (row[2] as! String).jsonDecode() as! [String:Any]
-
+	public static func fromRow(sessionManager:SessionProtocol, row: [String: Any?]) throws -> Session {
+		let sess = Session(sessionManager: sessionManager, expiration: .session, for: row["ip"] as! String)//(format.string(for: row["expire"])))
+		sess.cookieID = row["cookie"] as! String
+		sess.data = try (row["data"] as! String).jsonDecode() as! [String:Any]
 		return sess
+	}
+
+	func getIP() -> String {
+		return IP
 	}
 }

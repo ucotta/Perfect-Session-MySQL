@@ -47,6 +47,10 @@ public class MySQLSession: SessionProtocol {
 		//connector = SessionMySQLConnector(host: host, user: user, pass: pass, scheme: scheme, db: db)
 	}
 
+	public func getIP(request: HTTPRequest) -> String {
+		return request.header(HTTPRequestHeader.Name.custom(name: "X-Real-IP")) ?? request.remoteAddress.host
+	}
+
 	public func setCookieSecureAttributes(secure: Bool?, httpOnly: Bool?, sameSite: PerfectHTTP.HTTPCookie.SameSite? ) {
 		self.secure = secure ?? self.secure
 		self.httpOnly = httpOnly ?? self.httpOnly
@@ -56,15 +60,16 @@ public class MySQLSession: SessionProtocol {
 	}
 	public func start(_ request: HTTPRequest, response: HTTPResponse, expiration: PerfectHTTP.HTTPCookie.Expiration?) throws -> Session {
 		var session:Session? = nil
-		if let cookieID = request.cookie(key: cookieIDName) {
+		if let cookieID = request.cookie(key: cookieIDName, for: getIP(request: request)) {
 			session = try getCookieData(key: cookieID)
 		}
 
 		// if not was registered create a new one
 		if session == nil {
 			// Create a new session.
-			session = Session(sessionManager: self, expiration: expiration ?? self.expiration!)
+			session = Session(sessionManager: self, expiration: expiration ?? self.expiration!, for: getIP(request: request))
 		}
+
 		try deleteExpiredCookies()
 
 
@@ -105,8 +110,8 @@ public class MySQLSession: SessionProtocol {
 		defer {
 			conn.returnToPool()
 		}
-		try conn.execute("INSERT INTO \(tableName) (cookie, expire, data) VALUES (?, ?, ?) " +
-			"ON DUPLICATE KEY UPDATE expire = values(expire), data = values(data)", args: session.getCookieID(), session.getExpirationDate(), session.toJSON())
+		try conn.execute("INSERT INTO \(tableName) (cookie, expire, data, ip) VALUES (?, ?, ?, ?) " +
+			"ON DUPLICATE KEY UPDATE expire = values(expire), data = values(data)", args: session.getCookieID(), session.getExpirationDate(), session.toJSON(), session.getIP())
 	}
 
 
